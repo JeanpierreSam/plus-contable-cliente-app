@@ -1,0 +1,25 @@
+# Gradle y compilación
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+
+# IDE
+.idea/
+*.iml
+.kotlin/
+
+# Android local y secretos: nunca se suben
+local.properties
+*.jks
+*.keystore
+google-services.json
+keystore.properties
+.env
+.env.*
+
+# SO
+.DS_Store
+Thumbs.db
+
+# Notas de trabajo locales
+HANDOFF.md
