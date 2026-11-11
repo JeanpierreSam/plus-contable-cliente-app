@@ -71,13 +71,16 @@ class AuthApi(private val http: HttpClient, private val sesion: Sesion) {
     }
 }
 
-private suspend fun <T> traducirErrores(bloque: suspend () -> T): T = try {
+internal suspend fun <T> traducirErrores(bloque: suspend () -> T): T = try {
     bloque()
 } catch (e: ResponseException) {
     val status = e.response.status
+    // 401 y 403 llegan sin cuerpo en ms-tributario: el mensaje es nuestro.
     val mensaje = try { e.response.body<ErrorApi>().mensaje } catch (_: Exception) { "" }
     throw if (status == HttpStatusCode.Unauthorized) {
         ApiException(mensaje.ifBlank { "Usuario o contraseña incorrectos" }, noAutorizado = true)
+    } else if (status == HttpStatusCode.Forbidden) {
+        ApiException(mensaje.ifBlank { "No tienes acceso a esta información" })
     } else {
         ApiException(mensaje.ifBlank { "Error del servidor (${status.value})" })
     }

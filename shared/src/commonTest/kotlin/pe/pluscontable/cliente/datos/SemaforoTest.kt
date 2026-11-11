@@ -4,26 +4,37 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class SemaforoTest {
-    private fun o(vence: String, estado: String) = Obligacion(1, "IGV", "2026-10", vence, estado)
+    private fun o(vence: String, estado: String) = Obligacion(1, "IGV", "2026-10-01", vence, estado)
     private val hoy = "2026-11-11"
     private val limite = "2026-11-18"
 
     @Test
-    fun rojoSiAlgoSinPresentarYaVencio() =
-        assertEquals(Semaforo.ROJO, semaforo(listOf(o("2026-11-01", "VENCIDA"), o("2026-11-13", "PENDIENTE")), hoy, limite))
+    fun rojoSiAlgoAbiertoYaVencio() =
+        assertEquals(Semaforo.ROJO, semaforo(listOf(o("2026-11-01", "PENDIENTE"), o("2026-11-13", "PENDIENTE")), hoy, limite))
+
+    @Test
+    fun pagoParcialSigueAbierto() =
+        assertEquals(Semaforo.ROJO, semaforo(listOf(o("2026-11-01", "PAGO_PARCIAL")), hoy, limite))
 
     @Test
     fun amarilloSiVenceEnLaSemana() =
         assertEquals(Semaforo.AMARILLO, semaforo(listOf(o("2026-11-13", "PENDIENTE")), hoy, limite))
 
     @Test
-    fun verdeSiTodoPresentadoOLejano() =
-        assertEquals(Semaforo.VERDE, semaforo(listOf(o("2026-10-01", "PRESENTADA"), o("2026-12-15", "PENDIENTE")), hoy, limite))
+    fun verdeSiTodoCerradoOLejano() =
+        assertEquals(Semaforo.VERDE, semaforo(listOf(o("2026-10-01", "PAGADO"), o("2026-10-02", "DECLARADO"), o("2026-12-15", "PENDIENTE")), hoy, limite))
 
     @Test
-    fun proximoIgnoraPresentadasYPasadas() {
-        val lista = listOf(o("2026-11-20", "PENDIENTE"), o("2026-11-13", "PENDIENTE"), o("2026-11-12", "PRESENTADA"), o("2026-11-01", "VENCIDA"))
-        assertEquals("2026-11-13", proximoVencimiento(lista, hoy)?.vence)
+    fun proximoIgnoraCerradasYPasadas() {
+        val lista = listOf(o("2026-11-20", "PENDIENTE"), o("2026-11-13", "PENDIENTE"), o("2026-11-12", "PAGADO"), o("2026-11-01", "PENDIENTE"))
+        assertEquals("2026-11-13", proximoVencimiento(lista, hoy)?.fechaVencimiento)
+    }
+
+    @Test
+    fun vencidaSeDeduceConLaFecha() {
+        assertEquals("VENCIDA", estadoVisible(o("2026-11-01", "PENDIENTE"), hoy))
+        assertEquals("PAGADO", estadoVisible(o("2026-11-01", "PAGADO"), hoy))
+        assertEquals("PENDIENTE", estadoVisible(o("2026-11-13", "PENDIENTE"), hoy))
     }
 
     @Test

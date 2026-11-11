@@ -13,9 +13,10 @@ class DatosLocalTest {
     fun laBaseNuevaSeSiembraYSeLee() = runTest {
         val d = datos()
         assertEquals(5, d.obligaciones().size)
-        assertEquals("PENDIENTE", d.obligaciones().first().estado) // más reciente primero
-        assertEquals(3, d.cobros().size)
-        assertEquals(listOf(1, 2), d.cuotas(1).map { it.numero })
-        assertEquals(emptyList(), d.cuotas(2))
+        assertEquals("2026-11-13", d.obligaciones().first().fechaVencimiento) // más reciente primero
+        assertEquals(listOf("2026-11-15", "2026-12-15"), d.cobros().map { it.fechaCobro })
+        val f = d.fraccionamientos().single()
+        assertEquals(listOf(1, 2, 3), f.cuotas.map { it.numero })
+        assertEquals("2026-10-19", f.cuotas.first().fechaPago)
     }
 }

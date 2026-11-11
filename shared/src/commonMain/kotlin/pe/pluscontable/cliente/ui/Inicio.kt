@@ -41,11 +41,12 @@ import pe.pluscontable.cliente.datos.ApiException
 import pe.pluscontable.cliente.datos.AuthApi
 import pe.pluscontable.cliente.datos.Cobro
 import pe.pluscontable.cliente.datos.DatosCliente
-import pe.pluscontable.cliente.datos.Cuota
+import pe.pluscontable.cliente.datos.Fraccionamiento
 import pe.pluscontable.cliente.datos.Obligacion
 import pe.pluscontable.cliente.datos.Semaforo
 import pe.pluscontable.cliente.datos.Usuario
 import pe.pluscontable.cliente.datos.dentroDeSieteDias
+import pe.pluscontable.cliente.datos.estadoVisible
 import pe.pluscontable.cliente.datos.hoy
 import pe.pluscontable.cliente.datos.proximoVencimiento
 import pe.pluscontable.cliente.datos.semaforo
@@ -57,8 +58,7 @@ class InicioViewModel(private val auth: AuthApi, private val datos: DatosCliente
     var sesionTerminada by mutableStateOf(false); private set
     var obligaciones by mutableStateOf<List<Obligacion>>(emptyList()); private set
     var cobros by mutableStateOf<List<Cobro>>(emptyList()); private set
-    var cobroAbierto by mutableStateOf<Cobro?>(null); private set
-    var cuotas by mutableStateOf<List<Cuota>>(emptyList()); private set
+    var fraccionamientos by mutableStateOf<List<Fraccionamiento>>(emptyList()); private set
 
     fun cargar() {
         error = null
@@ -68,17 +68,12 @@ class InicioViewModel(private val auth: AuthApi, private val datos: DatosCliente
                 // shortcut: lecturas a SQLite en el hilo principal; son pocas filas. Con la API serán de red y suspenden.
                 obligaciones = datos.obligaciones()
                 cobros = datos.cobros()
+                fraccionamientos = datos.fraccionamientos()
             } catch (e: ApiException) {
                 // Token vencido (8 h) o revocado: vuelve al login.
                 if (e.noAutorizado) cerrarSesion() else error = e.message
             }
         }
-    }
-
-    fun abrirCobro(c: Cobro?) {
-        cobroAbierto = c
-        if (c == null) return
-        viewModelScope.launch { cuotas = datos.cuotas(c.id) }
     }
 
     fun cerrarSesion() {
@@ -94,7 +89,7 @@ fun PantallaInicio(alSalir: () -> Unit, vm: InicioViewModel = koinViewModel()) {
     Scaffold(bottomBar = {
         NavigationBar {
             listOf("Resumen", "Obligaciones", "Cobros").forEachIndexed { i, t ->
-                NavigationBarItem(selected = pestana == i, onClick = { pestana = i; vm.abrirCobro(null) }, icon = {}, label = { Text(t) })
+                NavigationBarItem(selected = pestana == i, onClick = { pestana = i }, icon = {}, label = { Text(t) })
             }
         }
     }) { margen ->
@@ -108,8 +103,7 @@ fun PantallaInicio(alSalir: () -> Unit, vm: InicioViewModel = koinViewModel()) {
                 vm.usuario == null -> CircularProgressIndicator(Modifier.align(Alignment.Center))
                 pestana == 0 -> Resumen(vm)
                 pestana == 1 -> ListaObligaciones(vm.obligaciones)
-                vm.cobroAbierto != null -> DetalleCobro(vm.cobroAbierto!!, vm.cuotas) { vm.abrirCobro(null) }
-                else -> ListaCobros(vm.cobros, vm::abrirCobro)
+                else -> Cobros(vm.cobros, vm.fraccionamientos)
             }
         }
     }
@@ -135,7 +129,7 @@ private fun Resumen(vm: InicioViewModel) {
         Card(Modifier.fillMaxWidth()) {
             Column(Modifier.padding(16.dp)) {
                 Text("Próximo vencimiento", style = MaterialTheme.typography.labelLarge)
-                Text(if (proxima == null) "Ninguno pendiente" else "${proxima.tributo} (${proxima.periodo}) — ${proxima.vence}")
+                Text(if (proxima == null) "Ninguno pendiente" else "${proxima.tipoObligacion} (${proxima.periodo.take(7)}) — ${proxima.fechaVencimiento}")
             }
         }
         OutlinedButton(vm::cerrarSesion) { Text("Cerrar sesión") }
@@ -147,13 +141,14 @@ private fun Vacio(texto: String) = Text(texto, Modifier.padding(16.dp))
 
 @Composable
 private fun ListaObligaciones(lista: List<Obligacion>) {
+    val hoy = hoy()
     if (lista.isEmpty()) return Vacio("No tienes obligaciones registradas")
     LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         items(lista, key = { it.id }) { o ->
             Card(Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(16.dp)) {
-                    Text("${o.tributo} · ${o.periodo}", style = MaterialTheme.typography.titleSmall)
-                    Text("Vence ${o.vence} — ${o.estado}")
+                    Text("${o.tipoObligacion} · ${o.periodo.take(7)}", style = MaterialTheme.typography.titleSmall)
+                    Text("Vence ${o.fechaVencimiento} — ${estadoVisible(o, hoy)}")
                 }
             }
         }
@@ -161,28 +156,28 @@ private fun ListaObligaciones(lista: List<Obligacion>) {
 }
 
 @Composable
-private fun ListaCobros(lista: List<Cobro>, alAbrir: (Cobro) -> Unit) {
-    if (lista.isEmpty()) return Vacio("No tienes cobros registrados")
+private fun Cobros(cobros: List<Cobro>, fraccionamientos: List<Fraccionamiento>) {
+    if (cobros.isEmpty() && fraccionamientos.isEmpty()) return Vacio("No tienes cobros registrados")
     LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        items(lista, key = { it.id }) { c ->
-            Card(Modifier.fillMaxWidth().clickable { alAbrir(c) }) {
+        // El backend no manda concepto ni periodo del cobro: "Honorarios" es texto fijo.
+        items(cobros, key = { "c${it.id}" }) { c ->
+            Card(Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(16.dp)) {
-                    Text("${c.concepto} · ${c.periodo}", style = MaterialTheme.typography.titleSmall)
-                    Text("${soles(c.monto)} — vence ${c.vence} — ${c.estado}")
+                    Text("Honorarios", style = MaterialTheme.typography.titleSmall)
+                    Text("${soles(c.monto)} — cobro el ${c.fechaCobro}")
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun DetalleCobro(c: Cobro, cuotas: List<Cuota>, alVolver: () -> Unit) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        OutlinedButton(alVolver) { Text("← Cobros") }
-        Text("${c.concepto} · ${c.periodo}", style = MaterialTheme.typography.titleMedium)
-        Text("${soles(c.monto)} — ${c.estado}")
-        Text("Cuotas", style = MaterialTheme.typography.labelLarge)
-        if (cuotas.isEmpty()) Text("Sin fraccionamiento")
-        cuotas.forEach { Text("Cuota ${it.numero}: ${soles(it.monto)} — vence ${it.vence} — ${it.estado}") }
+        items(fraccionamientos, key = { "f${it.id}" }) { f ->
+            Card(Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text("Fraccionamiento ${f.tributo} · ${soles(f.montoTotal)}", style = MaterialTheme.typography.titleSmall)
+                    f.cuotas.forEach {
+                        val riesgo = if (it.enRiesgo) " ⚠ en riesgo" else ""
+                        Text("Cuota ${it.numero}/${f.numeroCuotas}: ${soles(it.monto)} — vence ${it.fechaVencimiento} — ${it.estado}$riesgo")
+                    }
+                }
+            }
+        }
     }
 }
