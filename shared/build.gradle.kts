@@ -4,6 +4,7 @@ plugins {
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.serialization)
+    alias(libs.plugins.sqldelight)
 }
 
 kotlin {
@@ -27,6 +28,7 @@ kotlin {
             api(libs.koin.core)
             implementation(libs.koin.compose.viewmodel)
             api(libs.settings)
+            api(libs.sqldelight.runtime)
         }
         commonTest.dependencies {
             implementation(kotlin("test"))
@@ -34,5 +36,10 @@ kotlin {
             implementation(libs.coroutines.test)
             implementation(libs.settings.test)
         }
+        getByName("androidHostTest").dependencies { implementation(libs.sqldelight.jvm) }
     }
+}
+
+sqldelight {
+    databases { create("ClienteDb") { packageName.set("pe.pluscontable.cliente.db") } }
 }

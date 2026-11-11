@@ -1,0 +1,36 @@
+-- Base local de la app (cliente.db). Mismas columnas que los DTO de DatosCliente.
+-- Al pasar a la API, esta base queda como caché o se elimina; ver DatosCliente.
+
+CREATE TABLE obligacion (
+    id INTEGER NOT NULL PRIMARY KEY,
+    tributo TEXT NOT NULL,
+    periodo TEXT NOT NULL,
+    vence TEXT NOT NULL,
+    estado TEXT NOT NULL
+);
+
+CREATE TABLE cobro (
+    id INTEGER NOT NULL PRIMARY KEY,
+    concepto TEXT NOT NULL,
+    periodo TEXT NOT NULL,
+    monto REAL NOT NULL,
+    vence TEXT NOT NULL,
+    estado TEXT NOT NULL
+);
+
+CREATE TABLE cuota (
+    cobroId INTEGER NOT NULL REFERENCES cobro(id),
+    numero INTEGER NOT NULL,
+    vence TEXT NOT NULL,
+    monto REAL NOT NULL,
+    estado TEXT NOT NULL,
+    PRIMARY KEY (cobroId, numero)
+);
+
+obligaciones: SELECT * FROM obligacion ORDER BY vence DESC;
+cobros: SELECT * FROM cobro ORDER BY vence DESC;
+cuotas: SELECT * FROM cuota WHERE cobroId = ? ORDER BY numero;
+totalObligaciones: SELECT COUNT(*) FROM obligacion;
+insertarObligacion: INSERT OR REPLACE INTO obligacion VALUES (?, ?, ?, ?, ?);
+insertarCobro: INSERT OR REPLACE INTO cobro VALUES (?, ?, ?, ?, ?, ?);
+insertarCuota: INSERT OR REPLACE INTO cuota VALUES (?, ?, ?, ?, ?);

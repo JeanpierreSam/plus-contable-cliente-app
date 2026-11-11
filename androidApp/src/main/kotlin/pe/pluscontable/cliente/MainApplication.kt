@@ -3,6 +3,9 @@ package pe.pluscontable.cliente
 import android.app.Application
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
+import app.cash.sqldelight.db.SqlDriver
+import app.cash.sqldelight.driver.android.AndroidSqliteDriver
+import pe.pluscontable.cliente.db.ClienteDb
 import com.russhwolf.settings.Settings
 import com.russhwolf.settings.SharedPreferencesSettings
 import io.ktor.client.engine.HttpClientEngine
@@ -26,6 +29,7 @@ class MainApplication : Application() {
             modules(
                 module {
                     single<Settings> { SharedPreferencesSettings(prefs) }
+                    single<SqlDriver> { AndroidSqliteDriver(ClienteDb.Schema, this@MainApplication, "cliente.db") }
                     single<HttpClientEngine> { OkHttp.create() }
                 },
                 moduloApp(BuildConfig.AUTH_URL),

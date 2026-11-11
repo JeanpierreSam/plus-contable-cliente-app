@@ -33,4 +33,5 @@ dependencies {
     implementation(libs.activity.compose)
     implementation(libs.ktor.client.okhttp)
     implementation(libs.security.crypto)
+    implementation(libs.sqldelight.android)
 }

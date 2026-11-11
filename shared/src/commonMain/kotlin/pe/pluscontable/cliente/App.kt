@@ -12,7 +12,10 @@ import org.koin.compose.koinInject
 import org.koin.core.module.dsl.viewModelOf
 import org.koin.dsl.module
 import pe.pluscontable.cliente.datos.AuthApi
+import pe.pluscontable.cliente.datos.DatosCliente
 import pe.pluscontable.cliente.datos.Sesion
+import pe.pluscontable.cliente.datos.DatosLocal
+import pe.pluscontable.cliente.db.ClienteDb
 import pe.pluscontable.cliente.datos.crearHttpClient
 import pe.pluscontable.cliente.ui.InicioViewModel
 import pe.pluscontable.cliente.ui.LoginViewModel
@@ -27,6 +30,8 @@ fun moduloApp(authUrl: String) = module {
     single { Sesion(get()) }
     single { crearHttpClient(get<HttpClientEngine>(), authUrl, get()) }
     single { AuthApi(get(), get()) }
+    single { ClienteDb(get()) }
+    single<DatosCliente> { DatosLocal(get()) } // al pasar a la API: DatosApi(get())
     viewModelOf(::LoginViewModel)
     viewModelOf(::InicioViewModel)
 }
