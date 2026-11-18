@@ -44,4 +44,14 @@ class DatosApi(private val http: HttpClient, private val sesion: Sesion) : Datos
             }.body()
         }
     }
+
+    override suspend fun documentos(): List<Documento> {
+        val id = clienteId()
+        return traducirErrores { http.get("api/tributario/clientes/$id/documentos").body() }
+    }
+
+    override suspend fun descargarDocumento(id: Long): ByteArray {
+        val cliente = clienteId()
+        return traducirErrores { http.get("api/tributario/clientes/$cliente/documentos/$id/archivo").body() }
+    }
 }

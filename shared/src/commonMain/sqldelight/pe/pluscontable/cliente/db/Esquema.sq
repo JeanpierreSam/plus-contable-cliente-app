@@ -36,6 +36,15 @@ CREATE TABLE cuota (
     enRiesgo INTEGER NOT NULL -- 0 o 1
 );
 
+CREATE TABLE documento (
+    id INTEGER NOT NULL PRIMARY KEY,
+    tipo TEXT NOT NULL,
+    version INTEGER NOT NULL,
+    fechaEmision TEXT,
+    nombreArchivo TEXT NOT NULL,
+    tamanoBytes INTEGER NOT NULL
+);
+
 CREATE TABLE incidencia (
     id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
     tipo TEXT NOT NULL,
@@ -55,3 +64,5 @@ insertarFraccionamiento: INSERT OR REPLACE INTO fraccionamiento VALUES (?, ?, ?,
 insertarCuota: INSERT OR REPLACE INTO cuota VALUES (?, ?, ?, ?, ?, ?, ?, ?);
 incidencias: SELECT * FROM incidencia ORDER BY id DESC;
 insertarIncidencia: INSERT INTO incidencia(tipo, fecha, descripcion, registradaEn) VALUES (?, ?, ?, ?);
+documentos: SELECT * FROM documento ORDER BY tipo, version DESC;
+insertarDocumento: INSERT OR REPLACE INTO documento VALUES (?, ?, ?, ?, ?, ?);

@@ -93,4 +93,17 @@ class DatosApiTest {
         val cuerpo = (p.body as io.ktor.http.content.TextContent).text
         assertTrue(""""clienteId":7""" in cuerpo && """"descripcion":"Hola"""" in cuerpo, cuerpo)
     }
+
+    @Test
+    fun documentosSeListanYElArchivoSeDescargaComoBytes() = runTest {
+        val lista = api(
+            token,
+            """[{"id":3,"tipo":"FICHA_RUC","version":1,"fechaEmision":null,"nombreArchivo":"ruc.pdf","tamanoBytes":2048,"subidoEn":"2026-11-01T09:00:00"}]""",
+        ).documentos()
+        assertEquals("ruc.pdf", lista.single().nombreArchivo)
+        assertEquals("/api/tributario/clientes/7/documentos", peticiones[0].url.encodedPath)
+
+        assertEquals("%PDF", api(token, "%PDF-1.4").descargarDocumento(3).decodeToString().take(4))
+        assertEquals("/api/tributario/clientes/7/documentos/3/archivo", peticiones[1].url.encodedPath)
+    }
 }

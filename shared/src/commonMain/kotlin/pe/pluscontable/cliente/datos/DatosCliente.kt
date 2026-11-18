@@ -37,6 +37,22 @@ data class Incidencia(val id: Long, val tipo: String, val fecha: String, val des
 @Serializable
 data class IncidenciaNueva(val tipo: String, val clienteId: Long, val fecha: String, val descripcion: String)
 
+// DocumentoDto del backend: el expediente legal del cliente (el archivo siempre es PDF).
+@Serializable
+data class Documento(
+    val id: Long,
+    val tipo: String,
+    val version: Int,
+    val fechaEmision: String? = null,
+    val nombreArchivo: String,
+    val tamanoBytes: Long,
+)
+
+val etiquetasDocumento = mapOf("MINUTA" to "Minuta", "VIGENCIA_PODERES" to "Vigencia de poderes", "FICHA_RUC" to "Ficha RUC")
+
+/** Abre un PDF con la app del teléfono; la plataforma lo implementa (androidApp). Lanza si no hay visor. */
+fun interface AbridorPdf { fun abrir(nombre: String, bytes: ByteArray) }
+
 /** Tipos (valores de TipoIncidencia del backend) que el cliente puede reportar, con su etiqueta. */
 val tiposIncidencia = listOf(
     "ERROR_PROCESO_CONTABLE" to "Error en mis declaraciones",
@@ -49,6 +65,8 @@ interface DatosCliente {
     suspend fun obligaciones(): List<Obligacion>
     suspend fun cobros(): List<Cobro>
     suspend fun fraccionamientos(): List<Fraccionamiento>
+    suspend fun documentos(): List<Documento>
+    suspend fun descargarDocumento(id: Long): ByteArray
     suspend fun incidencias(): List<Incidencia>
     /** Registra una incidencia del cliente con fecha de hoy. */
     suspend fun registrarIncidencia(tipo: String, descripcion: String): Incidencia

@@ -10,6 +10,7 @@ import com.russhwolf.settings.Settings
 import com.russhwolf.settings.SharedPreferencesSettings
 import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.engine.okhttp.OkHttp
+import pe.pluscontable.cliente.datos.AbridorPdf
 import org.koin.core.context.startKoin
 import org.koin.dsl.module
 
@@ -31,6 +32,7 @@ class MainApplication : Application() {
                     single<Settings> { SharedPreferencesSettings(prefs) }
                     single<SqlDriver> { AndroidSqliteDriver(ClienteDb.Schema, this@MainApplication, "cliente.db") }
                     single<HttpClientEngine> { OkHttp.create() }
+                    single<AbridorPdf> { AbridorPdfAndroid(this@MainApplication) }
                 },
                 moduloApp(BuildConfig.AUTH_URL),
             )

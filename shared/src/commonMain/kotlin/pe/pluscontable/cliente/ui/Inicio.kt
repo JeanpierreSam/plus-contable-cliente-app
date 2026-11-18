@@ -37,6 +37,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import org.koin.compose.viewmodel.koinViewModel
 import pe.pluscontable.cliente.datos.ApiException
@@ -44,6 +45,9 @@ import pe.pluscontable.cliente.datos.AuthApi
 import pe.pluscontable.cliente.datos.Cobro
 import pe.pluscontable.cliente.datos.DatosCliente
 import pe.pluscontable.cliente.datos.Fraccionamiento
+import pe.pluscontable.cliente.datos.AbridorPdf
+import pe.pluscontable.cliente.datos.Documento
+import pe.pluscontable.cliente.datos.etiquetasDocumento
 import pe.pluscontable.cliente.datos.Incidencia
 import pe.pluscontable.cliente.datos.tiposIncidencia
 import pe.pluscontable.cliente.datos.Obligacion
@@ -56,13 +60,35 @@ import pe.pluscontable.cliente.datos.proximoVencimiento
 import pe.pluscontable.cliente.datos.semaforo
 import pe.pluscontable.cliente.datos.soles
 
-class InicioViewModel(private val auth: AuthApi, private val datos: DatosCliente) : ViewModel() {
+class InicioViewModel(private val auth: AuthApi, private val datos: DatosCliente, private val abridor: AbridorPdf) : ViewModel() {
     var usuario by mutableStateOf<Usuario?>(null); private set
     var error by mutableStateOf<String?>(null); private set
     var sesionTerminada by mutableStateOf(false); private set
     var obligaciones by mutableStateOf<List<Obligacion>>(emptyList()); private set
     var cobros by mutableStateOf<List<Cobro>>(emptyList()); private set
     var fraccionamientos by mutableStateOf<List<Fraccionamiento>>(emptyList()); private set
+
+    var documentos by mutableStateOf<List<Documento>>(emptyList()); private set
+    var errorDocumento by mutableStateOf<String?>(null); private set
+    var descargando by mutableStateOf<Long?>(null); private set
+
+    fun abrirDocumento(d: Documento) {
+        if (descargando != null) return
+        descargando = d.id; errorDocumento = null
+        viewModelScope.launch {
+            try {
+                abridor.abrir(d.nombreArchivo, datos.descargarDocumento(d.id))
+            } catch (e: ApiException) {
+                if (e.noAutorizado) cerrarSesion() else errorDocumento = e.message
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                errorDocumento = "No se pudo abrir el PDF. ¿Tienes un visor de PDF instalado?"
+            } finally {
+                descargando = null
+            }
+        }
+    }
 
     var incidencias by mutableStateOf<List<Incidencia>>(emptyList()); private set
     var errorIncidencia by mutableStateOf<String?>(null); private set
@@ -95,6 +121,7 @@ class InicioViewModel(private val auth: AuthApi, private val datos: DatosCliente
                 cobros = datos.cobros()
                 fraccionamientos = datos.fraccionamientos()
                 incidencias = datos.incidencias()
+                documentos = datos.documentos()
             } catch (e: ApiException) {
                 // Token vencido (8 h) o revocado: vuelve al login.
                 if (e.noAutorizado) cerrarSesion() else error = e.message
@@ -114,7 +141,7 @@ fun PantallaInicio(alSalir: () -> Unit, vm: InicioViewModel = koinViewModel()) {
     var pestana by rememberSaveable { mutableStateOf(0) }
     Scaffold(bottomBar = {
         NavigationBar {
-            listOf("Resumen", "Obligaciones", "Cobros", "Ayuda").forEachIndexed { i, t ->
+            listOf("Resumen", "Obligaciones", "Cobros", "Documentos", "Ayuda").forEachIndexed { i, t ->
                 NavigationBarItem(selected = pestana == i, onClick = { pestana = i }, icon = {}, label = { Text(t) })
             }
         }
@@ -130,6 +157,7 @@ fun PantallaInicio(alSalir: () -> Unit, vm: InicioViewModel = koinViewModel()) {
                 pestana == 0 -> Resumen(vm)
                 pestana == 1 -> ListaObligaciones(vm.obligaciones)
                 pestana == 2 -> Cobros(vm.cobros, vm.fraccionamientos)
+                pestana == 3 -> Documentos(vm)
                 else -> Incidencias(vm)
             }
         }
@@ -237,6 +265,23 @@ private fun Incidencias(vm: InicioViewModel) {
                 Column(Modifier.padding(16.dp)) {
                     Text(tiposIncidencia.firstOrNull { it.first == i.tipo }?.second ?: i.tipo, style = MaterialTheme.typography.titleSmall)
                     Text("${i.fecha} — ${i.descripcion}")
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun Documentos(vm: InicioViewModel) {
+    if (vm.documentos.isEmpty()) return Vacio("No tienes documentos archivados")
+    LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        vm.errorDocumento?.let { item { Text(it, color = MaterialTheme.colorScheme.error) } }
+        items(vm.documentos, key = { it.id }) { d ->
+            Card(Modifier.fillMaxWidth().clickable(enabled = vm.descargando == null) { vm.abrirDocumento(d) }) {
+                Column(Modifier.padding(16.dp)) {
+                    Text("${etiquetasDocumento[d.tipo] ?: d.tipo} · v${d.version}", style = MaterialTheme.typography.titleSmall)
+                    Text("${d.fechaEmision?.let { "Emitido $it · " }.orEmpty()}${d.tamanoBytes / 1024 + 1} KB")
+                    if (vm.descargando == d.id) Text("Abriendo…")
                 }
             }
         }

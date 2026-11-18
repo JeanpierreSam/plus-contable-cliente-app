@@ -29,4 +29,11 @@ class DatosLocalTest {
         assertEquals("segunda", segunda.descripcion)
         assertEquals(listOf("segunda", "primera"), d.incidencias().map { it.descripcion })
     }
+
+    @Test
+    fun documentosDeEjemploSeDescarganComoPdf() = runTest {
+        val d = datos()
+        assertEquals(2, d.documentos().size)
+        assertEquals("%PDF-1.4", d.descargarDocumento(1).decodeToString().take(8))
+    }
 }
