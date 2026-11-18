@@ -50,6 +50,19 @@ data class Documento(
 
 val etiquetasDocumento = mapOf("MINUTA" to "Minuta", "VIGENCIA_PODERES" to "Vigencia de poderes", "FICHA_RUC" to "Ficha RUC")
 
+// NotificacionSolDto del backend (Buzón SOL); solo lectura. Las fechas llegan como "AAAA-MM-DD".
+@Serializable
+data class Aviso(
+    val id: Long,
+    val tipo: String,
+    val fechaRecepcion: String,
+    val plazoRespuesta: String? = null,
+    val estado: String,
+    val fechaAtencion: String? = null,
+)
+
+val etiquetasAviso = mapOf("ESQUELA" to "Esquela", "CARTA_INDUCTIVA" to "Carta inductiva", "COMUNICADO" to "Comunicado")
+
 /** Abre un PDF con la app del teléfono; la plataforma lo implementa (androidApp). Lanza si no hay visor. */
 fun interface AbridorPdf { fun abrir(nombre: String, bytes: ByteArray) }
 
@@ -65,6 +78,7 @@ interface DatosCliente {
     suspend fun obligaciones(): List<Obligacion>
     suspend fun cobros(): List<Cobro>
     suspend fun fraccionamientos(): List<Fraccionamiento>
+    suspend fun avisos(): List<Aviso>
     suspend fun documentos(): List<Documento>
     suspend fun descargarDocumento(id: Long): ByteArray
     suspend fun incidencias(): List<Incidencia>

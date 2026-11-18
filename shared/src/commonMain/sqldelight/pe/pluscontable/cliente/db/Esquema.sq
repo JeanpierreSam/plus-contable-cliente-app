@@ -36,6 +36,15 @@ CREATE TABLE cuota (
     enRiesgo INTEGER NOT NULL -- 0 o 1
 );
 
+CREATE TABLE aviso (
+    id INTEGER NOT NULL PRIMARY KEY,
+    tipo TEXT NOT NULL,
+    fechaRecepcion TEXT NOT NULL,
+    plazoRespuesta TEXT,
+    estado TEXT NOT NULL,
+    fechaAtencion TEXT
+);
+
 CREATE TABLE documento (
     id INTEGER NOT NULL PRIMARY KEY,
     tipo TEXT NOT NULL,
@@ -66,3 +75,5 @@ incidencias: SELECT * FROM incidencia ORDER BY id DESC;
 insertarIncidencia: INSERT INTO incidencia(tipo, fecha, descripcion, registradaEn) VALUES (?, ?, ?, ?);
 documentos: SELECT * FROM documento ORDER BY tipo, version DESC;
 insertarDocumento: INSERT OR REPLACE INTO documento VALUES (?, ?, ?, ?, ?, ?);
+avisos: SELECT * FROM aviso ORDER BY fechaRecepcion DESC;
+insertarAviso: INSERT OR REPLACE INTO aviso VALUES (?, ?, ?, ?, ?, ?);

@@ -54,4 +54,9 @@ class DatosApi(private val http: HttpClient, private val sesion: Sesion) : Datos
         val cliente = clienteId()
         return traducirErrores { http.get("api/tributario/clientes/$cliente/documentos/$id/archivo").body() }
     }
+
+    override suspend fun avisos(): List<Aviso> {
+        val id = clienteId()
+        return traducirErrores { http.get("api/tributario/clientes/$id/notificaciones").body() }
+    }
 }

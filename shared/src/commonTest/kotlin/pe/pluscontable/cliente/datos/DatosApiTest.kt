@@ -106,4 +106,14 @@ class DatosApiTest {
         assertEquals("%PDF", api(token, "%PDF-1.4").descargarDocumento(3).decodeToString().take(4))
         assertEquals("/api/tributario/clientes/7/documentos/3/archivo", peticiones[1].url.encodedPath)
     }
+
+    @Test
+    fun avisosLeenLasNotificacionesDelCliente() = runTest {
+        val a = api(
+            token,
+            """[{"id":4,"clienteId":7,"tipo":"ESQUELA","fechaRecepcion":"2026-11-10","plazoRespuesta":"2026-11-24","estado":"PENDIENTE","fechaAtencion":null}]""",
+        ).avisos().single()
+        assertEquals("ESQUELA", a.tipo)
+        assertEquals("/api/tributario/clientes/7/notificaciones", peticiones[0].url.encodedPath)
+    }
 }

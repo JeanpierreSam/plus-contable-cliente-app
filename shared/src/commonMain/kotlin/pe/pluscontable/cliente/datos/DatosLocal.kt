@@ -25,6 +25,10 @@ class DatosLocal(db: ClienteDb) : DatosCliente {
         }.executeAsList()
     }
 
+    override suspend fun avisos() = q.avisos { id, tipo, recepcion, plazo, estado, atencion ->
+        Aviso(id, tipo, recepcion, plazo, estado, atencion)
+    }.executeAsList()
+
     override suspend fun documentos() = q.documentos { id, tipo, version, emision, nombre, tam ->
         Documento(id, tipo, version.toInt(), emision, nombre, tam)
     }.executeAsList()
@@ -53,6 +57,8 @@ class DatosLocal(db: ClienteDb) : DatosCliente {
         q.insertarObligacion(5, "RENTA", "2026-08-01", "2026-09-15", "PENDIENTE")
         q.insertarDocumento(1, "FICHA_RUC", 1, "2026-01-10", "ficha-ruc.pdf", 400)
         q.insertarDocumento(2, "VIGENCIA_PODERES", 2, "2026-03-05", "vigencia-poderes.pdf", 400)
+        q.insertarAviso(1, "ESQUELA", "2026-11-10", "2026-11-24", "PENDIENTE", null)
+        q.insertarAviso(2, "COMUNICADO", "2026-10-02", null, "ATENDIDA", "2026-10-03")
         q.insertarCobro(1, "2026-11-15", 350.0, "PENDIENTE")
         q.insertarCobro(2, "2026-12-15", 350.0, "PENDIENTE")
         q.insertarFraccionamiento(1, "IGV", 3000.0, 3, "2026-10-20")

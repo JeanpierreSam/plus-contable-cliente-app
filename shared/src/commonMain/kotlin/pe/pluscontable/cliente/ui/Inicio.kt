@@ -46,7 +46,9 @@ import pe.pluscontable.cliente.datos.Cobro
 import pe.pluscontable.cliente.datos.DatosCliente
 import pe.pluscontable.cliente.datos.Fraccionamiento
 import pe.pluscontable.cliente.datos.AbridorPdf
+import pe.pluscontable.cliente.datos.Aviso
 import pe.pluscontable.cliente.datos.Documento
+import pe.pluscontable.cliente.datos.etiquetasAviso
 import pe.pluscontable.cliente.datos.etiquetasDocumento
 import pe.pluscontable.cliente.datos.Incidencia
 import pe.pluscontable.cliente.datos.tiposIncidencia
@@ -68,6 +70,7 @@ class InicioViewModel(private val auth: AuthApi, private val datos: DatosCliente
     var cobros by mutableStateOf<List<Cobro>>(emptyList()); private set
     var fraccionamientos by mutableStateOf<List<Fraccionamiento>>(emptyList()); private set
 
+    var avisos by mutableStateOf<List<Aviso>>(emptyList()); private set
     var documentos by mutableStateOf<List<Documento>>(emptyList()); private set
     var errorDocumento by mutableStateOf<String?>(null); private set
     var descargando by mutableStateOf<Long?>(null); private set
@@ -121,6 +124,7 @@ class InicioViewModel(private val auth: AuthApi, private val datos: DatosCliente
                 cobros = datos.cobros()
                 fraccionamientos = datos.fraccionamientos()
                 incidencias = datos.incidencias()
+                avisos = datos.avisos()
                 documentos = datos.documentos()
             } catch (e: ApiException) {
                 // Token vencido (8 h) o revocado: vuelve al login.
@@ -141,7 +145,7 @@ fun PantallaInicio(alSalir: () -> Unit, vm: InicioViewModel = koinViewModel()) {
     var pestana by rememberSaveable { mutableStateOf(0) }
     Scaffold(bottomBar = {
         NavigationBar {
-            listOf("Resumen", "Obligaciones", "Cobros", "Documentos", "Ayuda").forEachIndexed { i, t ->
+            listOf("Resumen", "Obligaciones", "Cobros", "Avisos", "Documentos", "Ayuda").forEachIndexed { i, t ->
                 NavigationBarItem(selected = pestana == i, onClick = { pestana = i }, icon = {}, label = { Text(t) })
             }
         }
@@ -157,7 +161,8 @@ fun PantallaInicio(alSalir: () -> Unit, vm: InicioViewModel = koinViewModel()) {
                 pestana == 0 -> Resumen(vm)
                 pestana == 1 -> ListaObligaciones(vm.obligaciones)
                 pestana == 2 -> Cobros(vm.cobros, vm.fraccionamientos)
-                pestana == 3 -> Documentos(vm)
+                pestana == 3 -> Avisos(vm.avisos)
+                pestana == 4 -> Documentos(vm)
                 else -> Incidencias(vm)
             }
         }
@@ -282,6 +287,23 @@ private fun Documentos(vm: InicioViewModel) {
                     Text("${etiquetasDocumento[d.tipo] ?: d.tipo} · v${d.version}", style = MaterialTheme.typography.titleSmall)
                     Text("${d.fechaEmision?.let { "Emitido $it · " }.orEmpty()}${d.tamanoBytes / 1024 + 1} KB")
                     if (vm.descargando == d.id) Text("Abriendo…")
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun Avisos(avisos: List<Aviso>) {
+    if (avisos.isEmpty()) return Vacio("No tienes avisos de SUNAT")
+    LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        items(avisos, key = { it.id }) { a ->
+            Card(Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(16.dp)) {
+                    Text(etiquetasAviso[a.tipo] ?: a.tipo, style = MaterialTheme.typography.titleSmall)
+                    Text("Recibido ${a.fechaRecepcion}")
+                    if (a.estado == "ATENDIDA") Text("Atendido${a.fechaAtencion?.let { " el $it" }.orEmpty()}")
+                    else Text("Pendiente${a.plazoRespuesta?.let { " — plazo $it" }.orEmpty()}")
                 }
             }
         }

@@ -36,4 +36,9 @@ class DatosLocalTest {
         assertEquals(2, d.documentos().size)
         assertEquals("%PDF-1.4", d.descargarDocumento(1).decodeToString().take(8))
     }
+
+    @Test
+    fun avisosDeEjemploMasRecientePrimero() = runTest {
+        assertEquals(listOf(1L, 2L), datos().avisos().map { it.id })
+    }
 }
