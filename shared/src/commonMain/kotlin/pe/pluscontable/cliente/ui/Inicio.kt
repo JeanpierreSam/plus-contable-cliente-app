@@ -18,6 +18,8 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
@@ -42,6 +44,8 @@ import pe.pluscontable.cliente.datos.AuthApi
 import pe.pluscontable.cliente.datos.Cobro
 import pe.pluscontable.cliente.datos.DatosCliente
 import pe.pluscontable.cliente.datos.Fraccionamiento
+import pe.pluscontable.cliente.datos.Incidencia
+import pe.pluscontable.cliente.datos.tiposIncidencia
 import pe.pluscontable.cliente.datos.Obligacion
 import pe.pluscontable.cliente.datos.Semaforo
 import pe.pluscontable.cliente.datos.Usuario
@@ -60,6 +64,27 @@ class InicioViewModel(private val auth: AuthApi, private val datos: DatosCliente
     var cobros by mutableStateOf<List<Cobro>>(emptyList()); private set
     var fraccionamientos by mutableStateOf<List<Fraccionamiento>>(emptyList()); private set
 
+    var incidencias by mutableStateOf<List<Incidencia>>(emptyList()); private set
+    var errorIncidencia by mutableStateOf<String?>(null); private set
+    var enviando by mutableStateOf(false); private set
+
+    /** [alTerminar] se llama solo si se registró, para limpiar el formulario. */
+    fun enviarIncidencia(tipo: String, descripcion: String, alTerminar: () -> Unit) {
+        if (enviando) return
+        enviando = true; errorIncidencia = null
+        viewModelScope.launch {
+            try {
+                val nueva = datos.registrarIncidencia(tipo, descripcion)
+                incidencias = listOf(nueva) + incidencias
+                alTerminar()
+            } catch (e: ApiException) {
+                if (e.noAutorizado) cerrarSesion() else errorIncidencia = e.message
+            } finally {
+                enviando = false
+            }
+        }
+    }
+
     fun cargar() {
         error = null
         viewModelScope.launch {
@@ -69,6 +94,7 @@ class InicioViewModel(private val auth: AuthApi, private val datos: DatosCliente
                 obligaciones = datos.obligaciones()
                 cobros = datos.cobros()
                 fraccionamientos = datos.fraccionamientos()
+                incidencias = datos.incidencias()
             } catch (e: ApiException) {
                 // Token vencido (8 h) o revocado: vuelve al login.
                 if (e.noAutorizado) cerrarSesion() else error = e.message
@@ -88,7 +114,7 @@ fun PantallaInicio(alSalir: () -> Unit, vm: InicioViewModel = koinViewModel()) {
     var pestana by rememberSaveable { mutableStateOf(0) }
     Scaffold(bottomBar = {
         NavigationBar {
-            listOf("Resumen", "Obligaciones", "Cobros").forEachIndexed { i, t ->
+            listOf("Resumen", "Obligaciones", "Cobros", "Ayuda").forEachIndexed { i, t ->
                 NavigationBarItem(selected = pestana == i, onClick = { pestana = i }, icon = {}, label = { Text(t) })
             }
         }
@@ -103,7 +129,8 @@ fun PantallaInicio(alSalir: () -> Unit, vm: InicioViewModel = koinViewModel()) {
                 vm.usuario == null -> CircularProgressIndicator(Modifier.align(Alignment.Center))
                 pestana == 0 -> Resumen(vm)
                 pestana == 1 -> ListaObligaciones(vm.obligaciones)
-                else -> Cobros(vm.cobros, vm.fraccionamientos)
+                pestana == 2 -> Cobros(vm.cobros, vm.fraccionamientos)
+                else -> Incidencias(vm)
             }
         }
     }
@@ -176,6 +203,40 @@ private fun Cobros(cobros: List<Cobro>, fraccionamientos: List<Fraccionamiento>)
                         val riesgo = if (it.enRiesgo) " ⚠ en riesgo" else ""
                         Text("Cuota ${it.numero}/${f.numeroCuotas}: ${soles(it.monto)} — vence ${it.fechaVencimiento} — ${it.estado}$riesgo")
                     }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun Incidencias(vm: InicioViewModel) {
+    var tipo by rememberSaveable { mutableStateOf(tiposIncidencia.first().first) }
+    var texto by rememberSaveable { mutableStateOf("") }
+    LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        item {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("Reportar un problema o consulta", style = MaterialTheme.typography.titleMedium)
+                tiposIncidencia.forEach { (valor, etiqueta) ->
+                    FilterChip(selected = tipo == valor, onClick = { tipo = valor }, label = { Text(etiqueta) })
+                }
+                OutlinedTextField(
+                    texto, { texto = it.take(1000) }, Modifier.fillMaxWidth(), label = { Text("Cuéntanos qué pasa") }, minLines = 3,
+                )
+                vm.errorIncidencia?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+                Button(
+                    { vm.enviarIncidencia(tipo, texto) { texto = "" } },
+                    enabled = texto.isNotBlank() && !vm.enviando,
+                ) { Text(if (vm.enviando) "Enviando…" else "Enviar") }
+                Text("Mis incidencias", style = MaterialTheme.typography.titleMedium)
+                if (vm.incidencias.isEmpty()) Vacio("Aún no has reportado nada")
+            }
+        }
+        items(vm.incidencias, key = { it.id }) { i ->
+            Card(Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(16.dp)) {
+                    Text(tiposIncidencia.firstOrNull { it.first == i.tipo }?.second ?: i.tipo, style = MaterialTheme.typography.titleSmall)
+                    Text("${i.fecha} — ${i.descripcion}")
                 }
             }
         }

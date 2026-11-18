@@ -19,4 +19,14 @@ class DatosLocalTest {
         assertEquals(listOf(1, 2, 3), f.cuotas.map { it.numero })
         assertEquals("2026-10-19", f.cuotas.first().fechaPago)
     }
+
+    @Test
+    fun registrarIncidenciaLaDevuelveYLaListaPrimero() = runTest {
+        val d = datos()
+        assertEquals(0, d.incidencias().size)
+        d.registrarIncidencia("OTRO", "primera")
+        val segunda = d.registrarIncidencia("PROBLEMA_SIRE", " segunda ")
+        assertEquals("segunda", segunda.descripcion)
+        assertEquals(listOf("segunda", "primera"), d.incidencias().map { it.descripcion })
+    }
 }

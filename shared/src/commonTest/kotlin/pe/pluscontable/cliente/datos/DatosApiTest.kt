@@ -80,4 +80,17 @@ class DatosApiTest {
         assertEquals("No tienes acceso a esta información", e.message)
         assertTrue(!e.noAutorizado)
     }
+
+    @Test
+    fun incidenciasSeListanYSeRegistranConElClienteDelToken() = runTest {
+        val json = """{"id":5,"tipo":"OTRO","fecha":"2026-11-17","descripcion":"Hola","registradaPor":"cliente.demo","registradaEn":"2026-11-17T10:00:00","clientesAsociados":1,"observaciones":null}"""
+        assertEquals("OTRO", api(token, "[$json]").incidencias().single().tipo)
+        assertEquals("/api/tributario/clientes/7/incidencias", peticiones[0].url.encodedPath)
+
+        assertEquals(5L, api(token, json, HttpStatusCode.Created).registrarIncidencia("OTRO", " Hola ").id)
+        val p = peticiones[1]
+        assertEquals("/api/tributario/incidencias", p.url.encodedPath)
+        val cuerpo = (p.body as io.ktor.http.content.TextContent).text
+        assertTrue(""""clienteId":7""" in cuerpo && """"descripcion":"Hola"""" in cuerpo, cuerpo)
+    }
 }

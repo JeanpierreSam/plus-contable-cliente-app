@@ -30,9 +30,26 @@ data class Fraccionamiento(
     val cuotas: List<Cuota> = emptyList(),
 )
 
+// IncidenciaDto del backend (ms-tributario); la app ignora registradaPor, clientesAsociados y observaciones.
+@Serializable
+data class Incidencia(val id: Long, val tipo: String, val fecha: String, val descripcion: String, val registradaEn: String? = null)
+
+@Serializable
+data class IncidenciaNueva(val tipo: String, val clienteId: Long, val fecha: String, val descripcion: String)
+
+/** Tipos (valores de TipoIncidencia del backend) que el cliente puede reportar, con su etiqueta. */
+val tiposIncidencia = listOf(
+    "ERROR_PROCESO_CONTABLE" to "Error en mis declaraciones",
+    "PROBLEMA_SIRE" to "Problema con SIRE",
+    "OTRO" to "Otra consulta",
+)
+
 /** Lo que la app lee del estudio: hoy [DatosLocal] (SQLite), en producción [DatosApi]. Se cambia en moduloApp. */
 interface DatosCliente {
     suspend fun obligaciones(): List<Obligacion>
     suspend fun cobros(): List<Cobro>
     suspend fun fraccionamientos(): List<Fraccionamiento>
+    suspend fun incidencias(): List<Incidencia>
+    /** Registra una incidencia del cliente con fecha de hoy. */
+    suspend fun registrarIncidencia(tipo: String, descripcion: String): Incidencia
 }

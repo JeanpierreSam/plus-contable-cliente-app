@@ -25,6 +25,14 @@ class DatosLocal(db: ClienteDb) : DatosCliente {
         }.executeAsList()
     }
 
+    override suspend fun incidencias() = q.incidencias { id, tipo, fecha, desc, en -> Incidencia(id, tipo, fecha, desc, en) }.executeAsList()
+
+    override suspend fun registrarIncidencia(tipo: String, descripcion: String): Incidencia {
+        val fecha = hoy()
+        q.insertarIncidencia(tipo, fecha, descripcion.trim(), fecha)
+        return incidencias().first()
+    }
+
     // shortcut: datos de ejemplo de un solo cliente; desaparecen cuando los datos vengan de la API.
     // Reflejan el contrato: no hay VENCIDA (se deduce con la fecha) y los cobros son solo pendientes.
     private fun sembrar() = q.transaction {

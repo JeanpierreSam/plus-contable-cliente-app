@@ -36,6 +36,14 @@ CREATE TABLE cuota (
     enRiesgo INTEGER NOT NULL -- 0 o 1
 );
 
+CREATE TABLE incidencia (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    tipo TEXT NOT NULL,
+    fecha TEXT NOT NULL,
+    descripcion TEXT NOT NULL,
+    registradaEn TEXT
+);
+
 obligaciones: SELECT * FROM obligacion ORDER BY fechaVencimiento DESC;
 cobros: SELECT * FROM cobro ORDER BY fechaCobro;
 fraccionamientos: SELECT * FROM fraccionamiento ORDER BY id;
@@ -45,3 +53,5 @@ insertarObligacion: INSERT OR REPLACE INTO obligacion VALUES (?, ?, ?, ?, ?);
 insertarCobro: INSERT OR REPLACE INTO cobro VALUES (?, ?, ?, ?);
 insertarFraccionamiento: INSERT OR REPLACE INTO fraccionamiento VALUES (?, ?, ?, ?, ?);
 insertarCuota: INSERT OR REPLACE INTO cuota VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+incidencias: SELECT * FROM incidencia ORDER BY id DESC;
+insertarIncidencia: INSERT INTO incidencia(tipo, fecha, descripcion, registradaEn) VALUES (?, ?, ?, ?);
