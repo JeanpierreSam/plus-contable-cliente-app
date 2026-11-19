@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.composeCompiler)
@@ -11,9 +13,22 @@ android {
         minSdk = 26
         targetSdk = 36
         versionCode = 1
-        versionName = "0.1.0"
+        versionName = "1.0.0"
     }
     buildFeatures { buildConfig = true }
+    // Credenciales fuera del repo: keystore.properties (ignorado por Git). Sin él, el release sale sin firmar.
+    val firma = Properties().apply {
+        val f = rootProject.file("keystore.properties")
+        if (f.exists()) f.inputStream().use { load(it) }
+    }
+    signingConfigs {
+        if (firma.isNotEmpty()) create("release") {
+            storeFile = rootProject.file(firma.getProperty("storeFile"))
+            storePassword = firma.getProperty("storePassword")
+            keyAlias = firma.getProperty("keyAlias")
+            keyPassword = firma.getProperty("keyPassword")
+        }
+    }
     buildTypes {
         debug {
             // Emulador -> ms-auth en la PC. Celular real: cambiar por la IP de la PC.
@@ -24,6 +39,9 @@ android {
             // shortcut: URL de producción sin definir; fijarla (sin subirla al repo) antes del APK final.
             buildConfigField("String", "AUTH_URL", "\"https://cambiar.invalid/\"")
             manifestPlaceholders["cleartext"] = "false"
+            isMinifyEnabled = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            signingConfig = signingConfigs.findByName("release")
         }
     }
 }
