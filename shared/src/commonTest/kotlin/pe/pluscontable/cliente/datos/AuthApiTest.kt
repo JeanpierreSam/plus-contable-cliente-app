@@ -1,5 +1,6 @@
 package pe.pluscontable.cliente.datos
 
+import pe.pluscontable.cliente.domain.*
 import com.russhwolf.settings.MapSettings
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.MockRequestHandleScope

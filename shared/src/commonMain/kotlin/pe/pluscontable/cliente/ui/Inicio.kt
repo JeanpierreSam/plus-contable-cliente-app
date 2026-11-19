@@ -40,29 +40,37 @@ import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import org.koin.compose.viewmodel.koinViewModel
-import pe.pluscontable.cliente.datos.ApiException
-import pe.pluscontable.cliente.datos.AuthApi
-import pe.pluscontable.cliente.datos.Cobro
-import pe.pluscontable.cliente.datos.DatosCliente
-import pe.pluscontable.cliente.datos.Fraccionamiento
-import pe.pluscontable.cliente.datos.AbridorPdf
-import pe.pluscontable.cliente.datos.Aviso
-import pe.pluscontable.cliente.datos.Documento
-import pe.pluscontable.cliente.datos.etiquetasAviso
-import pe.pluscontable.cliente.datos.etiquetasDocumento
-import pe.pluscontable.cliente.datos.Incidencia
-import pe.pluscontable.cliente.datos.tiposIncidencia
-import pe.pluscontable.cliente.datos.Obligacion
-import pe.pluscontable.cliente.datos.Semaforo
-import pe.pluscontable.cliente.datos.Usuario
-import pe.pluscontable.cliente.datos.dentroDeSieteDias
-import pe.pluscontable.cliente.datos.estadoVisible
-import pe.pluscontable.cliente.datos.hoy
-import pe.pluscontable.cliente.datos.proximoVencimiento
-import pe.pluscontable.cliente.datos.semaforo
-import pe.pluscontable.cliente.datos.soles
+import pe.pluscontable.cliente.domain.ApiException
+import pe.pluscontable.cliente.domain.Autenticacion
+import pe.pluscontable.cliente.domain.DescargarDocumento
+import pe.pluscontable.cliente.domain.ObtenerPanel
+import pe.pluscontable.cliente.domain.RegistrarIncidencia
+import pe.pluscontable.cliente.domain.Cobro
+import pe.pluscontable.cliente.domain.Fraccionamiento
+import pe.pluscontable.cliente.domain.AbridorPdf
+import pe.pluscontable.cliente.domain.Aviso
+import pe.pluscontable.cliente.domain.Documento
+import pe.pluscontable.cliente.domain.etiquetasAviso
+import pe.pluscontable.cliente.domain.etiquetasDocumento
+import pe.pluscontable.cliente.domain.Incidencia
+import pe.pluscontable.cliente.domain.tiposIncidencia
+import pe.pluscontable.cliente.domain.Obligacion
+import pe.pluscontable.cliente.domain.Semaforo
+import pe.pluscontable.cliente.domain.Usuario
+import pe.pluscontable.cliente.domain.dentroDeSieteDias
+import pe.pluscontable.cliente.domain.estadoVisible
+import pe.pluscontable.cliente.domain.hoy
+import pe.pluscontable.cliente.domain.proximoVencimiento
+import pe.pluscontable.cliente.domain.semaforo
+import pe.pluscontable.cliente.domain.soles
 
-class InicioViewModel(private val auth: AuthApi, private val datos: DatosCliente, private val abridor: AbridorPdf) : ViewModel() {
+class InicioViewModel(
+    private val auth: Autenticacion,
+    private val obtenerPanel: ObtenerPanel,
+    private val registrarIncidencia: RegistrarIncidencia,
+    private val descargarDocumento: DescargarDocumento,
+    private val abridor: AbridorPdf,
+) : ViewModel() {
     var usuario by mutableStateOf<Usuario?>(null); private set
     var error by mutableStateOf<String?>(null); private set
     var sesionTerminada by mutableStateOf(false); private set
@@ -80,7 +88,7 @@ class InicioViewModel(private val auth: AuthApi, private val datos: DatosCliente
         descargando = d.id; errorDocumento = null
         viewModelScope.launch {
             try {
-                abridor.abrir(d.nombreArchivo, datos.descargarDocumento(d.id))
+                abridor.abrir(d.nombreArchivo, descargarDocumento(d.id))
             } catch (e: ApiException) {
                 if (e.noAutorizado) cerrarSesion() else errorDocumento = e.message
             } catch (e: CancellationException) {
@@ -103,7 +111,7 @@ class InicioViewModel(private val auth: AuthApi, private val datos: DatosCliente
         enviando = true; errorIncidencia = null
         viewModelScope.launch {
             try {
-                val nueva = datos.registrarIncidencia(tipo, descripcion)
+                val nueva = registrarIncidencia(tipo, descripcion)
                 incidencias = listOf(nueva) + incidencias
                 alTerminar()
             } catch (e: ApiException) {
@@ -119,13 +127,13 @@ class InicioViewModel(private val auth: AuthApi, private val datos: DatosCliente
         viewModelScope.launch {
             try {
                 usuario = auth.yo()
-                // shortcut: lecturas a SQLite en el hilo principal; son pocas filas. Con la API serán de red y suspenden.
-                obligaciones = datos.obligaciones()
-                cobros = datos.cobros()
-                fraccionamientos = datos.fraccionamientos()
-                incidencias = datos.incidencias()
-                avisos = datos.avisos()
-                documentos = datos.documentos()
+                val panel = obtenerPanel()
+                obligaciones = panel.obligaciones
+                cobros = panel.cobros
+                fraccionamientos = panel.fraccionamientos
+                incidencias = panel.incidencias
+                avisos = panel.avisos
+                documentos = panel.documentos
             } catch (e: ApiException) {
                 // Token vencido (8 h) o revocado: vuelve al login.
                 if (e.noAutorizado) cerrarSesion() else error = e.message

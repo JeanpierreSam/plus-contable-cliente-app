@@ -1,4 +1,4 @@
-package pe.pluscontable.cliente.datos
+package pe.pluscontable.cliente.domain
 
 import kotlin.test.Test
 import kotlin.test.assertEquals

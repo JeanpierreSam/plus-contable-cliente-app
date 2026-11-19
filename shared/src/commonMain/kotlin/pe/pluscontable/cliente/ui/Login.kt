@@ -25,9 +25,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.launch
 import org.koin.compose.viewmodel.koinViewModel
-import pe.pluscontable.cliente.datos.AuthApi
+import pe.pluscontable.cliente.domain.Autenticacion
 
-class LoginViewModel(private val auth: AuthApi) : ViewModel() {
+class LoginViewModel(private val auth: Autenticacion) : ViewModel() {
     var usuario by mutableStateOf("")
     var clave by mutableStateOf("")
     var cargando by mutableStateOf(false); private set

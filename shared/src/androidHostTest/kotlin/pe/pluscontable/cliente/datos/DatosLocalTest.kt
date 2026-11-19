@@ -1,5 +1,6 @@
 package pe.pluscontable.cliente.datos
 
+import pe.pluscontable.cliente.domain.*
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
 import kotlinx.coroutines.test.runTest
 import pe.pluscontable.cliente.db.ClienteDb

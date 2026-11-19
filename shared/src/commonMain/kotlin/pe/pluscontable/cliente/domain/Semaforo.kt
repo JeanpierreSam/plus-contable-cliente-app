@@ -1,4 +1,4 @@
-package pe.pluscontable.cliente.datos
+package pe.pluscontable.cliente.domain
 
 import kotlin.math.roundToLong
 import kotlin.time.Clock

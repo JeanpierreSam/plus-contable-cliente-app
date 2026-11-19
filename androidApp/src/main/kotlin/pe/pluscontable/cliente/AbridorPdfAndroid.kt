@@ -3,7 +3,7 @@ package pe.pluscontable.cliente
 import android.content.Context
 import android.content.Intent
 import androidx.core.content.FileProvider
-import pe.pluscontable.cliente.datos.AbridorPdf
+import pe.pluscontable.cliente.domain.AbridorPdf
 import java.io.File
 
 /** Guarda el PDF en la caché de la app y lo abre con el visor del teléfono. */

@@ -8,9 +8,10 @@ import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
+import pe.pluscontable.cliente.domain.*
 
 /** [DatosCliente] sobre ms-tributario. [http] debe apuntar a su URL base (puerto distinto al de ms-auth). */
-class DatosApi(private val http: HttpClient, private val sesion: Sesion) : DatosCliente {
+class DatosApi(private val http: HttpClient, private val sesion: Sesion) : ClienteRepositorio {
     // Se lee fuera de traducirErrores, que convertiría esta excepción en "No se pudo conectar".
     // El clienteId sale del JWT; si falta, el servidor respondería 403 de todos modos.
     private fun clienteId() = sesion.clienteId ?: throw ApiException("Tu cuenta no está asociada a un cliente", noAutorizado = true)
