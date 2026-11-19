@@ -33,11 +33,13 @@ android {
         debug {
             // Emulador -> ms-auth en la PC. Celular real: cambiar por la IP de la PC.
             buildConfigField("String", "AUTH_URL", "\"http://10.0.2.2:8081/\"")
+            buildConfigField("String", "TRIBUTARIO_URL", "\"http://10.0.2.2:8082/\"")
             manifestPlaceholders["cleartext"] = "true"
         }
         release {
             // shortcut: URL de producción sin definir; fijarla (sin subirla al repo) antes del APK final.
             buildConfigField("String", "AUTH_URL", "\"https://cambiar.invalid/\"")
+            buildConfigField("String", "TRIBUTARIO_URL", "\"https://cambiar.invalid/\"")
             manifestPlaceholders["cleartext"] = "false"
             isMinifyEnabled = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")

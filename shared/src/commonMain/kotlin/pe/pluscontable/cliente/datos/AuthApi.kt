@@ -17,24 +17,16 @@ import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.CancellationException
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import pe.pluscontable.cliente.domain.ApiException
+import pe.pluscontable.cliente.domain.Autenticacion
+import pe.pluscontable.cliente.domain.Usuario
 
 // DTO copiados de ms-auth (dto/LoginRequest, LoginResponse, UserDto).
 @Serializable data class LoginRequest(val username: String, val password: String)
 
-@Serializable
-data class Usuario(
-    val id: Long,
-    val username: String,
-    val nombreCompleto: String? = null,
-    val roles: List<String> = emptyList(),
-)
-
 @Serializable data class LoginResponse(val token: String, val tipo: String, val expiraEnSegundos: Long, val usuario: Usuario)
 
 @Serializable private data class ErrorApi(val mensaje: String = "")
-
-/** Error de la API con un mensaje listo para mostrar. [noAutorizado]: el token o las credenciales no sirven. */
-class ApiException(mensaje: String, val noAutorizado: Boolean = false) : Exception(mensaje)
 
 fun crearHttpClient(engine: HttpClientEngine, baseUrl: String, sesion: Sesion) = HttpClient(engine) {
     expectSuccess = true
@@ -46,9 +38,9 @@ fun crearHttpClient(engine: HttpClientEngine, baseUrl: String, sesion: Sesion) =
     }
 }
 
-class AuthApi(private val http: HttpClient, private val sesion: Sesion) {
+class AuthApi(private val http: HttpClient, private val sesion: Sesion) : Autenticacion {
 
-    suspend fun login(usuario: String, clave: String): Usuario = traducirErrores {
+    override suspend fun login(usuario: String, clave: String): Usuario = traducirErrores {
         val r: LoginResponse = http.post("api/auth/login") {
             contentType(ContentType.Application.Json)
             setBody(LoginRequest(usuario.trim(), clave))
@@ -57,10 +49,10 @@ class AuthApi(private val http: HttpClient, private val sesion: Sesion) {
         r.usuario
     }
 
-    suspend fun yo(): Usuario = traducirErrores { http.get("api/auth/me").body() }
+    override suspend fun yo(): Usuario = traducirErrores { http.get("api/auth/me").body() }
 
     /** Revoca el token en el servidor si se puede; la sesión local se borra siempre. */
-    suspend fun logout() {
+    override suspend fun logout() {
         try {
             http.post("api/auth/logout")
         } catch (e: CancellationException) {

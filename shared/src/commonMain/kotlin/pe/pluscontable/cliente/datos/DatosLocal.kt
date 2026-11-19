@@ -1,9 +1,10 @@
 package pe.pluscontable.cliente.datos
 
 import pe.pluscontable.cliente.db.ClienteDb
+import pe.pluscontable.cliente.domain.*
 
-/** [DatosCliente] sobre la base SQLite de la app. La primera vez se llena con datos de ejemplo. */
-class DatosLocal(db: ClienteDb) : DatosCliente {
+/** [ClienteRepositorio] sobre la base SQLite de la app. La primera vez se llena con datos de ejemplo. */
+class DatosLocal(db: ClienteDb) : ClienteRepositorio {
     private val q = db.esquemaQueries
 
     init {
