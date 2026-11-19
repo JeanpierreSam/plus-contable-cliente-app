@@ -13,3 +13,6 @@
 -dontwarn org.conscrypt.**
 -dontwarn org.bouncycastle.**
 -dontwarn org.openjsse.**
+
+# Tink (security-crypto) referencia anotaciones de errorprone que no van en el APK.
+-dontwarn com.google.errorprone.annotations.**
