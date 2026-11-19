@@ -5,6 +5,20 @@ plugins {
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.serialization)
     alias(libs.plugins.sqldelight)
+    alias(libs.plugins.kover)
+    alias(libs.plugins.sonarqube)
+}
+
+sonar {
+    properties {
+        property("sonar.projectKey", "pluscontable-cliente-app")
+        property("sonar.host.url", "http://localhost:9000")
+        property("sonar.sources", "src/commonMain")
+        property("sonar.tests", "src/commonTest,src/androidHostTest")
+        property("sonar.coverage.jacoco.xmlReportPaths", "build/reports/kover/report.xml")
+        // Solo generado: el .sq es la fuente de SQLDelight, no código Kotlin propio.
+        property("sonar.exclusions", "**/build/**,**/generated/**,**/*.sq")
+    }
 }
 
 kotlin {
